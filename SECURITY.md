@@ -3,6 +3,7 @@
 ## Authorization
 
 - Only the configured admin may change rates or the DEX account list.
+- Only the configured issuer may call `issue`.
 - A transfer requires the sender's authorization.
 - The contract must not process a notification that originated from itself as an outgoing transfer.
 
@@ -12,6 +13,7 @@
 - Symbol and precision must match the token.
 - Rates are basis points and must be capped (the educational target is ≤ 1000 bps).
 - A zero or negative rate is either rejected or treated as no tax; it must not wrap.
+- An issue that would push supply above max_supply is refused.
 
 ## DEX exact-amount path
 
@@ -32,7 +34,8 @@ Tax calculation is `(amount * bps) / 10000`. Use a wide intermediate type or an 
 - Rates above 1000 bps are refused.
 - Amounts above `2^62 - 1` are refused.
 - Only the configured admin may change rates; non-admin is refused; admin cannot exceed the cap.
+- Only the configured issuer may issue; non-issuer is refused; issue above max supply is refused; negative or zero issue is refused.
 
 ## Current status
 
-The TypeScript rule exists and now includes the admin rate-setter. The C++ sketch contains a matching `setrates` action but is uncompiled and has not been shown to match the test. Do not treat the sketch as the implementation until a deterministic build matches the rule.
+The TypeScript rule exists and now includes both the admin rate-setter and the issuer-only issue action. The C++ sketch contains matching `setrates` and `issue` actions but is uncompiled and has not been shown to match the test. Do not treat the sketch as the implementation until a deterministic build matches the rule.
