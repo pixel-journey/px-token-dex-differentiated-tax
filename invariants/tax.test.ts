@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyTax, setRates, issue } from "./tax.ts";
+import { MAX_AMOUNT, applyTax, setRates, issue } from "./tax.ts";
 
 const cfg = {
   admin: "guardian",
@@ -8,49 +8,60 @@ const cfg = {
   sell_bps: 500,
   transfer_bps: 100,
   dex_accounts: ["swap.alcor", "swap.taco"],
-  supply: 0,
-  max_supply: 1000000,
+  supply: 0n,
+  max_supply: 1_000_000n,
 };
 
 test("DEX path delivers exact amount; tax on sender", () => {
-  const r = applyTax(1000, "swap.alcor", "", cfg);
-  assert.equal(r.delivered, 1000);
-  assert.equal(r.tax, 50);
-  assert.equal(r.sender_debit, 1050);
+  const r = applyTax(1000n, "swap.alcor", "", cfg);
+  assert.equal(r.delivered, 1000n);
+  assert.equal(r.tax, 50n);
+  assert.equal(r.sender_debit, 1050n);
 });
 
 test("normal transfer deducts tax from recipient", () => {
-  const r = applyTax(1000, "alice", "", cfg);
-  assert.equal(r.delivered, 990);
-  assert.equal(r.tax, 10);
-  assert.equal(r.sender_debit, 1000);
+  const r = applyTax(1000n, "alice", "", cfg);
+  assert.equal(r.delivered, 990n);
+  assert.equal(r.tax, 10n);
+  assert.equal(r.sender_debit, 1000n);
 });
 
 test("liquidity memo is exempt", () => {
-  const r = applyTax(1000, "swap.alcor", "liquidity", cfg);
-  assert.equal(r.delivered, 1000);
-  assert.equal(r.tax, 0);
-  assert.equal(r.sender_debit, 1000);
+  const r = applyTax(1000n, "swap.alcor", "liquidity", cfg);
+  assert.equal(r.delivered, 1000n);
+  assert.equal(r.tax, 0n);
+  assert.equal(r.sender_debit, 1000n);
 });
 
 test("negative amount is refused", () => {
-  assert.throws(() => applyTax(-1, "alice", "", cfg), /positive/);
+  assert.throws(() => applyTax(-1n, "alice", "", cfg), /positive/);
 });
 
 test("zero amount is refused", () => {
-  assert.throws(() => applyTax(0, "alice", "", cfg), /positive/);
+  assert.throws(() => applyTax(0n, "alice", "", cfg), /positive/);
+});
+
+test("a number is refused because the asset range is not a JS number", () => {
+  assert.throws(() => applyTax(1000 as unknown as bigint, "alice", "", cfg), /positive/);
 });
 
 test("rate above cap is refused", () => {
   assert.throws(
-    () => applyTax(1000, "alice", "", { ...cfg, transfer_bps: 1001 }),
-    /rate out of range/
+    () => applyTax(1000n, "alice", "", { ...cfg, transfer_bps: 1001 }),
+    /rate out of range/,
   );
 });
 
-test("amount near max is accepted; over max is refused", () => {
-  const max = Number(2n ** 62n - 1n);
-  assert.throws(() => applyTax(max + 1, "alice", "", cfg));
+test("max asset amount is accepted and one past it is refused", () => {
+  assert.equal(Number(MAX_AMOUNT), Number(MAX_AMOUNT + 1n));
+  const kept = applyTax(MAX_AMOUNT, "alice", "liquidity", cfg);
+  assert.equal(kept.delivered, MAX_AMOUNT);
+  assert.equal(kept.sender_debit, MAX_AMOUNT);
+  assert.throws(() => applyTax(MAX_AMOUNT + 1n, "alice", "", cfg), /exceeds max/);
+});
+
+test("a max-size sell is refused because the debit would pass the asset max", () => {
+  assert.throws(() => applyTax(MAX_AMOUNT, "swap.alcor", "", cfg), /debit exceeds max/);
 });
 
 test("admin may change rates within cap", () => {
@@ -68,19 +79,19 @@ test("admin cannot set rate above cap", () => {
 });
 
 test("issuer may issue within max supply", () => {
-  const next = issue("issueracct", cfg, "alice", 500);
-  assert.equal(next.supply, 500);
+  const next = issue("issueracct", cfg, "alice", 500n);
+  assert.equal(next.supply, 500n);
 });
 
 test("non-issuer cannot issue", () => {
-  assert.throws(() => issue("alice", cfg, "alice", 500), /issuer/);
+  assert.throws(() => issue("alice", cfg, "alice", 500n), /issuer/);
 });
 
 test("issue that would exceed max supply is refused", () => {
-  assert.throws(() => issue("issueracct", cfg, "alice", 2000000), /max supply/);
+  assert.throws(() => issue("issueracct", cfg, "alice", 2_000_000n), /max supply/);
 });
 
 test("negative or zero issue is refused", () => {
-  assert.throws(() => issue("issueracct", cfg, "alice", 0), /positive/);
-  assert.throws(() => issue("issueracct", cfg, "alice", -10), /positive/);
+  assert.throws(() => issue("issueracct", cfg, "alice", 0n), /positive/);
+  assert.throws(() => issue("issueracct", cfg, "alice", -10n), /positive/);
 });

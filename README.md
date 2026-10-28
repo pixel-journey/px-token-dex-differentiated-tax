@@ -11,7 +11,7 @@ Private. Tested TypeScript rule exists. C++ sketch is uncompiled. Not a token yo
 - `memo === "liquidity"` is exempt.
 - Negative and zero amounts are refused.
 - Rates above 1000 bps are refused.
-- Amounts above `2^62 - 1` are refused.
+- Amounts are `bigint`. `2^62 - 1` is not a safe JavaScript number, so a `Number` comparison cannot see the next integer. The max amount is accepted. One past it is refused. A sell of the max amount is refused because `amount + tax` would pass the asset max.
 - Only the configured admin may change rates; non-admin is refused; admin cannot exceed the cap.
 - Only the configured issuer may issue; non-issuer is refused; issue that would exceed max supply is refused; negative or zero issue is refused.
 

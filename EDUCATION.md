@@ -15,7 +15,7 @@ A DEX pair (swap.alcor, swap.taco, etc.) checks that the quantity it was notifie
 - `memo === "liquidity"` is exempt (tax = 0).
 - Negative or zero amounts are refused.
 - Rates above 1000 bps are refused.
-- Amounts above `2^62 - 1` are refused.
+- Amounts are `bigint`. `2^62 - 1` is not a safe JavaScript number: `Number(2^62 - 1)` and `Number(2^62)` are the same value, so the old `Number` check never threw. A sell of the max amount is also refused, because the sender debit is `amount + tax`.
 - A tax that would consume the entire amount on a normal path is refused.
 
 ## Why the sender-side accounting works

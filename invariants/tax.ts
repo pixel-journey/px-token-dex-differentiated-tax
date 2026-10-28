@@ -4,81 +4,76 @@ export type TaxConfig = {
   sell_bps: number;
   transfer_bps: number;
   dex_accounts: string[];
-  supply: number;
-  max_supply: number;
+  supply: bigint;
+  max_supply: bigint;
 };
 
 export type TransferResult = {
-  delivered: number;
-  tax: number;
-  sender_debit: number;
+  delivered: bigint;
+  tax: bigint;
+  sender_debit: bigint;
 };
 
 const MAX_BPS = 1000;
-const MAX_AMOUNT = 2n ** 62n - 1n;
+/** eosio::asset rejects amounts at or above 2^62. That integer is not a safe JS number. */
+export const MAX_AMOUNT = 2n ** 62n - 1n;
 
-export function applyTax(
-  amount: number,
-  to: string,
-  memo: string,
-  cfg: TaxConfig
-): TransferResult {
-  if (!Number.isInteger(amount) || amount <= 0) {
-    throw new Error("quantity must be positive integer");
-  }
-  if (amount > Number(MAX_AMOUNT)) {
-    throw new Error("amount exceeds max");
-  }
-  if (cfg.sell_bps < 0 || cfg.sell_bps > MAX_BPS || cfg.transfer_bps < 0 || cfg.transfer_bps > MAX_BPS) {
+function rate(bps: number): bigint {
+  if (!Number.isInteger(bps) || bps < 0 || bps > MAX_BPS) {
     throw new Error("rate out of range");
   }
+  return BigInt(bps);
+}
+
+function positive(amount: bigint): bigint {
+  if (typeof amount !== "bigint" || amount <= 0n) {
+    throw new Error("quantity must be a positive integer");
+  }
+  if (amount > MAX_AMOUNT) throw new Error("amount exceeds max");
+  return amount;
+}
+
+export function applyTax(
+  amount: bigint,
+  to: string,
+  memo: string,
+  cfg: TaxConfig,
+): TransferResult {
+  const qty = positive(amount);
+  const sell = rate(cfg.sell_bps);
+  const transfer = rate(cfg.transfer_bps);
 
   const isDex = cfg.dex_accounts.includes(to) || memo.startsWith("dex:");
   const isLiquidity = memo === "liquidity";
 
   if (isDex || isLiquidity) {
-    const rate = isLiquidity ? 0 : cfg.sell_bps;
-    const tax = Math.floor((amount * rate) / 10000);
-    return {
-      delivered: amount,
-      tax,
-      sender_debit: amount + tax,
-    };
+    const tax = isLiquidity ? 0n : (qty * sell) / 10000n;
+    const sender_debit = qty + tax;
+    if (sender_debit > MAX_AMOUNT) throw new Error("debit exceeds max");
+    return { delivered: qty, tax, sender_debit };
   }
 
-  const tax = Math.floor((amount * cfg.transfer_bps) / 10000);
-  if (tax >= amount) {
-    throw new Error("tax exceeds quantity");
-  }
-  return {
-    delivered: amount - tax,
-    tax,
-    sender_debit: amount,
-  };
+  const tax = (qty * transfer) / 10000n;
+  if (tax >= qty) throw new Error("tax exceeds quantity");
+  return { delivered: qty - tax, tax, sender_debit: qty };
 }
 
 export function setRates(
   caller: string,
   cfg: TaxConfig,
   sell_bps: number,
-  transfer_bps: number
+  transfer_bps: number,
 ): TaxConfig {
   if (caller !== cfg.admin) throw new Error("not admin");
-  if (sell_bps < 0 || sell_bps > MAX_BPS || transfer_bps < 0 || transfer_bps > MAX_BPS) {
-    throw new Error("rate out of range");
-  }
+  rate(sell_bps);
+  rate(transfer_bps);
   return { ...cfg, sell_bps, transfer_bps };
 }
 
-export function issue(
-  caller: string,
-  cfg: TaxConfig,
-  to: string,
-  amount: number
-): TaxConfig {
+export function issue(caller: string, cfg: TaxConfig, to: string, amount: bigint): TaxConfig {
   if (caller !== cfg.issuer) throw new Error("not issuer");
-  if (!Number.isInteger(amount) || amount <= 0) throw new Error("quantity must be positive integer");
-  if (cfg.supply + amount > cfg.max_supply) throw new Error("exceeds max supply");
-  if (amount > Number(MAX_AMOUNT)) throw new Error("amount exceeds max");
-  return { ...cfg, supply: cfg.supply + amount };
+  if (to.length === 0) throw new Error("missing recipient");
+  const qty = positive(amount);
+  if (cfg.supply + qty > cfg.max_supply) throw new Error("exceeds max supply");
+  return { ...cfg, supply: cfg.supply + qty };
 }
