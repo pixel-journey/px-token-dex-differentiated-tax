@@ -1,8 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyTax } from "./tax.ts";
+import { applyTax, setRates } from "./tax.ts";
 
 const cfg = {
+  admin: "guardian",
   sell_bps: 500,
   transfer_bps: 100,
   dex_accounts: ["swap.alcor", "swap.taco"],
@@ -47,4 +48,18 @@ test("rate above cap is refused", () => {
 test("amount near max is accepted; over max is refused", () => {
   const max = Number(2n ** 62n - 1n);
   assert.throws(() => applyTax(max + 1, "alice", "", cfg));
+});
+
+test("admin may change rates within cap", () => {
+  const next = setRates("guardian", cfg, 300, 50);
+  assert.equal(next.sell_bps, 300);
+  assert.equal(next.transfer_bps, 50);
+});
+
+test("non-admin cannot change rates", () => {
+  assert.throws(() => setRates("alice", cfg, 300, 50), /admin/);
+});
+
+test("admin cannot set rate above cap", () => {
+  assert.throws(() => setRates("guardian", cfg, 1001, 50), /rate out of range/);
 });
