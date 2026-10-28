@@ -1,16 +1,26 @@
 # px-token-dex-differentiated-tax
 
-Quest 106. Private. Uncompiled sketch. There is no `npm test`. `cdt-cpp` was not run. This is not a token you can issue.
+Private. Tested TypeScript rule exists. C++ sketch is uncompiled. Not a token you can issue.
 
-## What the file tries to say
+## What is true
 
-A DEX pool checks that the quantity it was notified for equals the balance it will credit. `contracts/src/px_tax_token.cpp` sketches that path:
+`npm test` runs `invariants/tax.test.ts`.
 
-- If `to` is in the `dex` table and tax is non-zero, debit `amount + tax` from the sender and credit the pool for the original `amount`.
-- Split the tax between treasury and a supply burn with `burn_share_bps`, using `int128` before the division.
-- Wallet transfers deduct tax from the recipient. `memo == "liquidity"` and the `exempt` table skip tax.
-- `create` rejects `max_supply.amount >= 2^62`.
+- DEX path delivers the exact amount; tax is added to the sender debit.
+- Normal path deducts tax from the recipient.
+- `memo === "liquidity"` is exempt.
+- Negative and zero amounts are refused.
+- Rates above 1000 bps are refused.
+- Amounts above `2^62 - 1` are refused.
 
-None of that was executed. There is no `issue`, so balances cannot be created. There are no admin setters for the dex, exempt, or blocklist tables. `client/wharfkit-demo.ts` was not run.
+The C++ in `contracts/src/px_tax_token.cpp` is still an uncompiled sketch. It has not been shown to match the test. `cdt-cpp` was not run. There is no wasm.
 
-Do not deploy this file.
+## Run
+
+```bash
+npm test
+```
+
+No host is called.
+
+Do not deploy the sketch.
