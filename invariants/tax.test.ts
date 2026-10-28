@@ -1,12 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyTax, setRates } from "./tax.ts";
+import { applyTax, setRates, issue } from "./tax.ts";
 
 const cfg = {
   admin: "guardian",
+  issuer: "issueracct",
   sell_bps: 500,
   transfer_bps: 100,
   dex_accounts: ["swap.alcor", "swap.taco"],
+  supply: 0,
+  max_supply: 1000000,
 };
 
 test("DEX path delivers exact amount; tax on sender", () => {
@@ -62,4 +65,22 @@ test("non-admin cannot change rates", () => {
 
 test("admin cannot set rate above cap", () => {
   assert.throws(() => setRates("guardian", cfg, 1001, 50), /rate out of range/);
+});
+
+test("issuer may issue within max supply", () => {
+  const next = issue("issueracct", cfg, "alice", 500);
+  assert.equal(next.supply, 500);
+});
+
+test("non-issuer cannot issue", () => {
+  assert.throws(() => issue("alice", cfg, "alice", 500), /issuer/);
+});
+
+test("issue that would exceed max supply is refused", () => {
+  assert.throws(() => issue("issueracct", cfg, "alice", 2000000), /max supply/);
+});
+
+test("negative or zero issue is refused", () => {
+  assert.throws(() => issue("issueracct", cfg, "alice", 0), /positive/);
+  assert.throws(() => issue("issueracct", cfg, "alice", -10), /positive/);
 });
