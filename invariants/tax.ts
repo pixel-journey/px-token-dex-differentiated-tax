@@ -1,8 +1,11 @@
 export type TaxConfig = {
   admin: string;
+  issuer: string;
   sell_bps: number;
   transfer_bps: number;
   dex_accounts: string[];
+  supply: number;
+  max_supply: number;
 };
 
 export type TransferResult = {
@@ -34,7 +37,6 @@ export function applyTax(
   const isLiquidity = memo === "liquidity";
 
   if (isDex || isLiquidity) {
-    // Exact delivery to the pair; tax accounted on sender side
     const rate = isLiquidity ? 0 : cfg.sell_bps;
     const tax = Math.floor((amount * rate) / 10000);
     return {
@@ -66,4 +68,17 @@ export function setRates(
     throw new Error("rate out of range");
   }
   return { ...cfg, sell_bps, transfer_bps };
+}
+
+export function issue(
+  caller: string,
+  cfg: TaxConfig,
+  to: string,
+  amount: number
+): TaxConfig {
+  if (caller !== cfg.issuer) throw new Error("not issuer");
+  if (!Number.isInteger(amount) || amount <= 0) throw new Error("quantity must be positive integer");
+  if (cfg.supply + amount > cfg.max_supply) throw new Error("exceeds max supply");
+  if (amount > Number(MAX_AMOUNT)) throw new Error("amount exceeds max");
+  return { ...cfg, supply: cfg.supply + amount };
 }
