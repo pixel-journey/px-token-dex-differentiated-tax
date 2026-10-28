@@ -4,8 +4,17 @@
 
 using namespace eosio;
 
-// Quest: px-token-dex-differentiated-tax
-// Sells deliver the exact quantity to the pool. Tax comes off the sender's remainder.
+// Educational sketch for px-token-dex-differentiated-tax.
+// The tested rule is invariants/tax.ts (npm test).
+// This C++ has not been compiled and has not been shown to match the test.
+// Do not deploy.
+//
+// Key points the sketch tries to illustrate:
+// - DEX recipient receives the exact quantity; tax is added to the sender debit.
+// - Normal path deducts tax from the recipient.
+// - liquidity memo and exempt table skip tax.
+// - max_supply is refused at or above 2^62.
+// - Tax math uses int128 intermediate.
 CONTRACT px_tax_token : public contract {
 public:
     using contract::contract;
