@@ -32,6 +32,7 @@ public:
     typedef multi_index<"stat"_n, currency_stats> stats;
 
     struct [[eosio::table]] token_config {
+        name admin;
         uint16_t transfer_tax_bps = 100;
         uint16_t buy_tax_bps = 200;
         uint16_t sell_tax_bps = 500;
@@ -66,6 +67,18 @@ public:
             s.max_supply = maximum_supply;
             s.issuer = issuer;
         });
+    }
+
+    // Only the configured admin may change rates. Cap is 1000 bps.
+    [[eosio::action]]
+    void setrates(uint16_t sell_bps, uint16_t transfer_bps) {
+        config_table cfgs(get_self(), get_self().value);
+        auto cfg = cfgs.get_or_default();
+        require_auth(cfg.admin);
+        check(sell_bps <= 1000 && transfer_bps <= 1000, "rate out of range");
+        cfg.sell_tax_bps = sell_bps;
+        cfg.transfer_tax_bps = transfer_bps;
+        cfgs.set(cfg, get_self());
     }
 
     [[eosio::action]]
