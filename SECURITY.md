@@ -31,7 +31,8 @@ Tax calculation is `(amount * bps) / 10000`. Use a wide intermediate type or an 
 - Negative and zero amounts are refused.
 - Rates above 1000 bps are refused.
 - Amounts above `2^62 - 1` are refused.
+- Only the configured admin may change rates; non-admin is refused; admin cannot exceed the cap.
 
 ## Current status
 
-The TypeScript rule exists. The C++ sketch is uncompiled and has not been shown to match the test. Do not treat the sketch as the implementation until a deterministic build matches the rule.
+The TypeScript rule exists and now includes the admin rate-setter. The C++ sketch contains a matching `setrates` action but is uncompiled and has not been shown to match the test. Do not treat the sketch as the implementation until a deterministic build matches the rule.
