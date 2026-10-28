@@ -1,4 +1,5 @@
 export type TaxConfig = {
+  admin: string;
   sell_bps: number;
   transfer_bps: number;
   dex_accounts: string[];
@@ -52,4 +53,17 @@ export function applyTax(
     tax,
     sender_debit: amount,
   };
+}
+
+export function setRates(
+  caller: string,
+  cfg: TaxConfig,
+  sell_bps: number,
+  transfer_bps: number
+): TaxConfig {
+  if (caller !== cfg.admin) throw new Error("not admin");
+  if (sell_bps < 0 || sell_bps > MAX_BPS || transfer_bps < 0 || transfer_bps > MAX_BPS) {
+    throw new Error("rate out of range");
+  }
+  return { ...cfg, sell_bps, transfer_bps };
 }
