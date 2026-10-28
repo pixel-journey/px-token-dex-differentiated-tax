@@ -21,6 +21,17 @@ On a path that a DEX pair will observe, the quantity delivered must be exactly t
 
 Tax calculation is `(amount * bps) / 10000`. Use a wide intermediate type or an explicit bounds check so the multiplication cannot overflow before the division.
 
+## What the tested rule covers
+
+`npm test` runs `invariants/tax.test.ts`.
+
+- DEX path delivers the exact amount; tax is added to the sender debit.
+- Normal path deducts tax from the recipient.
+- Liquidity memo is exempt.
+- Negative and zero amounts are refused.
+- Rates above 1000 bps are refused.
+- Amounts above `2^62 - 1` are refused.
+
 ## Current status
 
-No tested TypeScript rule exists yet. The C++ sketch is uncompiled. Do not treat it as the implementation until both a rule and a matching deterministic build exist.
+The TypeScript rule exists. The C++ sketch is uncompiled and has not been shown to match the test. Do not treat the sketch as the implementation until a deterministic build matches the rule.
