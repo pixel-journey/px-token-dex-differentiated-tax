@@ -4,17 +4,15 @@
 
 using namespace eosio;
 
-// Educational sketch for px-token-dex-differentiated-tax.
-// The tested rule is invariants/tax.ts (npm test).
-// This C++ has not been compiled and has not been shown to match the test.
+// Educational sketch for a taxed token that preserves exact DEX delivery.
+// Tested rule: invariants/tax.ts (npm test).
+// This file has not been compiled. It has not been shown to match the test.
 // Do not deploy.
 //
-// Key points the sketch tries to illustrate:
-// - DEX recipient receives the exact quantity; tax is added to the sender debit.
-// - Normal path deducts tax from the recipient.
-// - liquidity memo and exempt table skip tax.
-// - max_supply is refused at or above 2^62.
-// - Tax math uses int128 intermediate.
+// Core invariant the sketch tries to preserve:
+//   When the recipient is a DEX pair, the quantity credited to the pair
+//   equals the quantity in the transfer notification. Tax is taken from
+//   the sender instead.
 CONTRACT px_tax_token : public contract {
 public:
     using contract::contract;
@@ -51,6 +49,7 @@ public:
     typedef multi_index<"exempt"_n, flag_row> exempt_table;
     typedef multi_index<"blocklist"_n, flag_row> blocklist_table;
 
+    // create refuses a max supply at or above 2^62 so later int64 math stays safe.
     [[eosio::action]]
     void create(name issuer, asset maximum_supply) {
         require_auth(get_self());
@@ -58,6 +57,7 @@ public:
         check(sym.is_valid(), "invalid symbol");
         check(maximum_supply.is_valid(), "invalid supply");
         check(maximum_supply.amount > 0, "max-supply must be positive");
+        // Educational bound used by the tested rule.
         check(maximum_supply.amount < (static_cast<int64_t>(1) << 62), "max-supply too large");
         stats statstable(get_self(), sym.code().raw());
         check(statstable.find(sym.code().raw()) == statstable.end(), "token exists");
@@ -70,6 +70,7 @@ public:
 
     [[eosio::action]]
     void transfer(name from, name to, asset quantity, std::string memo) {
+        // Basic authorization and input checks. Negative/zero already refused by amount > 0.
         check(from != to, "cannot transfer to self");
         require_auth(from);
         check(is_account(to), "to account does not exist");
@@ -86,6 +87,7 @@ public:
         auto cfg = cfgs.get_or_default();
         check(!cfg.is_paused, "paused");
 
+        // Blocklist checked before any balance movement.
         blocklist_table blocked(get_self(), get_self().value);
         check(blocked.find(from.value) == blocked.end(), "sender blocked");
         check(blocked.find(to.value) == blocked.end(), "recipient blocked");
@@ -95,6 +97,7 @@ public:
         const bool from_dex = is_flagged<dex_table>(from);
         const bool to_dex = is_flagged<dex_table>(to);
 
+        // Rate selection. liquidity memo and exempt table force bps = 0.
         uint16_t bps = 0;
         if (!from_exempt && !to_exempt && memo != "liquidity") {
             if (from_dex) bps = cfg.buy_tax_bps;
@@ -102,12 +105,14 @@ public:
             else bps = cfg.transfer_tax_bps;
         }
 
+        // Wide intermediate so amount * bps cannot overflow int64 before the division.
         int64_t tax = static_cast<int64_t>((static_cast<int128_t>(quantity.amount) * bps) / 10000);
         int64_t burn_amount = static_cast<int64_t>((static_cast<int128_t>(tax) * cfg.burn_share_bps) / 10000);
         int64_t treasury_amount = tax - burn_amount;
         name payer = has_auth(to) ? to : from;
 
-        // AMM pools check the notified quantity. Do not shrink what they receive.
+        // DEX path: pair receives the original quantity; sender is debited amount + tax.
+        // Normal path: recipient receives amount - tax.
         if (to_dex && tax > 0) {
             sub_balance(from, asset(quantity.amount + tax, quantity.symbol));
             add_balance(to, quantity, payer);
