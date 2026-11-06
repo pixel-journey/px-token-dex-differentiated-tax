@@ -19,6 +19,13 @@ test("DEX path delivers exact amount; tax on sender", () => {
   assert.equal(r.sender_debit, 1050n);
 });
 
+test("dex: memo prefix uses sell path without listed account", () => {
+  const r = applyTax(1000n, "alice", "dex:swap", cfg);
+  assert.equal(r.delivered, 1000n);
+  assert.equal(r.tax, 50n);
+  assert.equal(r.sender_debit, 1050n);
+});
+
 test("normal transfer deducts tax from recipient", () => {
   const r = applyTax(1000n, "alice", "", cfg);
   assert.equal(r.delivered, 990n);
@@ -83,6 +90,11 @@ test("issuer may issue within max supply", () => {
   assert.equal(next.supply, 500n);
 });
 
+test("issuer may issue exactly to max supply", () => {
+  const next = issue("issueracct", cfg, "alice", 1_000_000n);
+  assert.equal(next.supply, 1_000_000n);
+});
+
 test("non-issuer cannot issue", () => {
   assert.throws(() => issue("alice", cfg, "alice", 500n), /issuer/);
 });
@@ -94,4 +106,8 @@ test("issue that would exceed max supply is refused", () => {
 test("negative or zero issue is refused", () => {
   assert.throws(() => issue("issueracct", cfg, "alice", 0n), /positive/);
   assert.throws(() => issue("issueracct", cfg, "alice", -10n), /positive/);
+});
+
+test("issue with empty recipient is refused", () => {
+  assert.throws(() => issue("issueracct", cfg, "", 10n), /missing recipient/);
 });
