@@ -1,29 +1,35 @@
-# px-token-dex-differentiated-tax
+# DEX vs transfer tax: who pays the fee
 
-> **Domain:** token tax — DEX vs transfer  
+> **Domain:** token tax — DEX vs peer transfer  
 > **Sources:** [SOURCES.md](SOURCES.md)  
 > **Vault:** [px-contract-examples-vault](https://github.com/pixel-journey/px-contract-examples-vault)
 
-Private. Tested TypeScript rule. C++ sketch is uncompiled. Not a token you can issue on chain.
+**Goal:** On a **DEX** path the pool receives the exact quoted amount and the sender pays tax on top. On a **normal** path tax comes out of the recipient’s delivery. Memo `liquidity` is exempt.
 
-Reference: [eosio.token](https://github.com/eosio/eosio.contracts). Docs: [docs.wax.io](https://docs.wax.io/). Sibling: [transfer-tax burn+treasury](https://github.com/pixel-journey/px-token-transfer-tax-burn-treasury).
+**Code under test:** `npm test`. C++ sketch is uncompiled. Not a live token.
 
-## What is true
+**Reference:** [eosio.token](https://github.com/eosio/eosio.contracts) · [docs.wax.io](https://docs.wax.io/).
 
-`npm test` runs `invariants/tax.test.ts`.
+## Learning materials
 
-- DEX path delivers the exact amount; tax is added to the sender debit.
-- Normal path deducts tax from the recipient.
-- `memo === "liquidity"` is exempt.
-- Admin-only rates; issuer-only issue within max supply.
-- Amounts are `bigint`; max and one-past refused correctly.
+| Doc | Role |
+| --- | --- |
+| [EDUCATION.md](EDUCATION.md) | Course |
+| [WORKED-EXAMPLES.md](WORKED-EXAMPLES.md) | DEX vs transfer legs |
+| [TIPS.md](TIPS.md) | Quote integrity |
+| [SECURITY.md](SECURITY.md) | Admin / overflow |
+| [SOURCES.md](SOURCES.md) | Official |
 
-Uncompiled C++ sketch is **not** proven against the tests. No wasm.
+## What is true (executed)
 
-## Run
+| Path | Delivered | Sender debit |
+| --- | --- | --- |
+| DEX / `dex:` memo | full qty | qty + sell tax |
+| Normal transfer | qty − transfer tax | qty |
+| memo `liquidity` | qty | qty (tax 0) |
 
 ```bash
 npm test
 ```
 
-See [SOURCES.md](SOURCES.md).
+MIT — Pixel Journey
