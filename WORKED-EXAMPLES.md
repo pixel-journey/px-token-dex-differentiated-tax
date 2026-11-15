@@ -1,22 +1,27 @@
 # Worked examples — differentiated DEX tax
 
-Config: sell 500 bps, transfer 100 bps, DEX accounts `swap.alcor` / `swap.taco`.
+Config under test: sell_bps **500**, transfer_bps **100**, dex accounts `swap.alcor` / `swap.taco`.
 
 ## Paths on amount 1000
 
-| To / memo | delivered | tax | sender_debit |
+| Path | delivered | tax | sender_debit |
 | --- | --- | --- | --- |
-| `swap.alcor`, empty memo | **1000** (exact) | 50 | 1050 |
-| `alice`, memo `dex:swap` | **1000** | 50 | 1050 |
-| `alice`, empty memo | 990 | 10 | 1000 |
-| `swap.alcor`, memo `liquidity` | 1000 | **0** | 1000 |
+| to `swap.alcor` | **1000** (exact) | 50 | **1050** |
+| memo `dex:swap` to alice | **1000** | 50 | **1050** |
+| normal to alice | **990** | 10 | **1000** |
+| memo `liquidity` to swap.alcor | **1000** | 0 | **1000** |
 
-DEX / `dex:` prefix uses **sell** rate and charges tax on the **sender** so the pool still receives the exact amount. Normal transfer taxes the recipient.
+DEX / `dex:` memo: tax is **extra on the sender** so the pool still receives the exact amount (reserve checks stay valid).
+
+Normal transfer: tax comes **out of the recipient**.
 
 ## Bounds
 
-Negative, zero, and non-bigint amounts refused. `transfer_bps` 1001 → rate out of range. `MAX_AMOUNT` ok on liquidity path; `MAX_AMOUNT+1` refused. Sell of `MAX_AMOUNT` refused (`debit exceeds max`).
+Zero/negative amount refused. transfer_bps **1001** → rate out of range. MAX_AMOUNT accepted on exempt liquidity path; MAX_AMOUNT+1 refused; MAX_AMOUNT on sell path → debit exceeds max.
 
 ## Admin / issuer
 
-`setRates(guardian, 300, 50)` ok; alice refused. Rate 1001 refused. Issuer may issue up to max supply; non-issuer / over max / zero / empty recipient refused.
+`setRates(guardian, 300, 50)` ok; alice refused; rate 1001 refused.
+`issue(issueracct, …, 500)` → supply 500; non-issuer / over max / zero / empty recipient refused.
+
+Teaching books only — C++ under `contracts/` is not the rule until compiled and matched to these tests.
