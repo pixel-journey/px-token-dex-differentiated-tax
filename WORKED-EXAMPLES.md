@@ -1,25 +1,22 @@
-# Worked examples — DEX vs transfer tax
+# Worked examples — differentiated DEX tax
 
-## Example A — normal transfer
+Config: sell 500 bps, transfer 100 bps, DEX accounts `swap.alcor` / `swap.taco`.
 
-Recipient is not a DEX account and memo is ordinary → tax from transfer_bps; **delivered = qty − tax**; sender_debit = qty.
+## Paths on amount 1000
 
-## Example B — DEX path
+| To / memo | delivered | tax | sender_debit |
+| --- | --- | --- | --- |
+| `swap.alcor`, empty memo | **1000** (exact) | 50 | 1050 |
+| `alice`, memo `dex:swap` | **1000** | 50 | 1050 |
+| `alice`, empty memo | 990 | 10 | 1000 |
+| `swap.alcor`, memo `liquidity` | 1000 | **0** | 1000 |
 
-`to` in dex_accounts **or** memo starts with `dex:` → pool receives **full qty**; tax = sell_bps on qty; **sender_debit = qty + tax**.
+DEX / `dex:` prefix uses **sell** rate and charges tax on the **sender** so the pool still receives the exact amount. Normal transfer taxes the recipient.
 
-## Example C — liquidity exempt
+## Bounds
 
-memo === `"liquidity"` → tax 0; delivered = qty; sender_debit = qty.
+Negative, zero, and non-bigint amounts refused. `transfer_bps` 1001 → rate out of range. `MAX_AMOUNT` ok on liquidity path; `MAX_AMOUNT+1` refused. Sell of `MAX_AMOUNT` refused (`debit exceeds max`).
 
-## Example D — admin rates
+## Admin / issuer
 
-Only admin may `setRates`. Rates capped (MAX_BPS 1000 in this lab).
-
-## Example E — issue
-
-Only issuer; supply + amount ≤ max_supply; amounts are bigint against MAX_AMOUNT (2^62−1).
-
-## Example F — tax ≥ quantity
-
-On normal path, if transfer tax would consume entire qty → refused.
+`setRates(guardian, 300, 50)` ok; alice refused. Rate 1001 refused. Issuer may issue up to max supply; non-issuer / over max / zero / empty recipient refused.
