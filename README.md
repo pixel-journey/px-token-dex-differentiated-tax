@@ -1,11 +1,14 @@
-# Differentiated buy/sell/transfer tax with DEX exact delivery
+# DEX differentiated tax (exact pool delivery)
 
-Sell path charges the **sender** so DEX accounts still receive the exact transfer amount. Normal transfers tax the recipient. Liquidity memo exempt.
+Educational split: sells into listed DEX accounts deliver **exact** qty (tax on sender top-up); wallet transfers shrink delivery. Liquidity memo exempt.
 
 | Doc | Role |
 | --- | --- |
-| [EDUCATION.md](EDUCATION.md) | Why exact delivery |
-| [WORKED-EXAMPLES.md](WORKED-EXAMPLES.md) | 1000-unit table |
+| [EDUCATION.md](EDUCATION.md) | Beginner → masterclass |
+| [WORKED-EXAMPLES.md](WORKED-EXAMPLES.md) | 1000/1050 tables |
+| [TIPS.md](TIPS.md) | UI and mistakes |
+| [SECURITY.md](SECURITY.md) | Gaps |
+| [SOURCES.md](SOURCES.md) | Links |
 
 ```bash
 npm test
