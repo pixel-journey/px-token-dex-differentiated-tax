@@ -35,4 +35,4 @@
 
 ## Related
 
-[transfer-tax burn+treasury](https://github.com/pixel-journey/px-token-transfer-tax-burn-treasury) · `px-token-dust-truncation-visualizer` (private; not this public course) · [token ledger](https://github.com/pixel-journey/px-token-balance-ledger) · [fee splitter](https://github.com/pixel-journey/px-treasury-incoming-fee-splitter)
+[transfer-tax burn+treasury](https://github.com/pixel-journey/px-token-transfer-tax-burn-treasury) · [px-token-dust-truncation-visualizer](https://github.com/pixel-journey/px-token-dust-truncation-visualizer) · [token ledger](https://github.com/pixel-journey/px-token-balance-ledger) · [fee splitter](https://github.com/pixel-journey/px-treasury-incoming-fee-splitter)

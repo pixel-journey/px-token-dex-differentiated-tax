@@ -23,7 +23,7 @@ Amounts near `2^62` stay `bigint`. `Number(MAX_AMOUNT)` is not safe.
 | Lab | Topic |
 | --- | --- |
 | [wallet tax](https://github.com/pixel-journey/px-token-transfer-tax-burn-treasury) | Recipient shrinks; burn is a share of the tax |
-| `px-token-dust-truncation-visualizer` (private; not this public course) | Floor to zero is a different bug |
+| [px-token-dust-truncation-visualizer](https://github.com/pixel-journey/px-token-dust-truncation-visualizer) | Floor to zero is a different bug |
 | [memo router](https://github.com/pixel-journey/px-memo-action-router) | Memo is not auth |
 | [ledger](https://github.com/pixel-journey/px-token-balance-ledger) | Conservation book |
 | [fee splitter](https://github.com/pixel-journey/px-treasury-incoming-fee-splitter) | Last-leg remainder |

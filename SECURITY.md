@@ -36,4 +36,4 @@ Pool path: `delivered == qty`, sender pays `qty + tax`. Wallet path: recipient g
 
 ## Honesty limits
 
-No wasm, no live DEX, no balance book. Sample numbers are the tests, not a live PIXA policy. Path: `px-contract-examples-vault` (private; not this public course). Related: `px-token-dust-truncation-visualizer` (private; not this public course) · [fee splitter](https://github.com/pixel-journey/px-treasury-incoming-fee-splitter) · [memo router](https://github.com/pixel-journey/px-memo-action-router).
+No wasm, no live DEX, no balance book. Sample numbers are the tests, not a live PIXA policy. Path: `px-contract-examples-vault` (private; not this public course). Related: [px-token-dust-truncation-visualizer](https://github.com/pixel-journey/px-token-dust-truncation-visualizer) · [fee splitter](https://github.com/pixel-journey/px-treasury-incoming-fee-splitter) · [memo router](https://github.com/pixel-journey/px-memo-action-router).
